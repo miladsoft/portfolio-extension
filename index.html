@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Bitcoin Price from Multiple Exchanges</title>
+    <link rel="stylesheet" href="style.css">
+    <meta http-equiv="Content-Security-Policy"
+        content="script-src 'self' 'sha256-V35v+wTx3wnUibH1WWdbrxRwQirGsHsHt59T+D0zzxs=';">
+
+</head>
+
+<body>
+
+    <div id="binance" class="exchange-container">
+        <div class="exchange-title">Binance</div>
+        <div id="price-binance" class="price">Connecting...</div>
+        <div id="status-binance" class="status"></div>
+    </div>
+
+    <div id="mempool" class="exchange-container">
+        <div class="exchange-title">Mempool.space</div>
+        <div id="price-mempool" class="price">Loading...</div>
+        <div id="status-mempool" class="status">Fetching price...</div>
+    </div>
+
+    <div id="bitfinex" class="exchange-container">
+        <div class="exchange-title">Bitfinex</div>
+        <div id="price-bitfinex" class="price">Connecting...</div>
+        <div id="status-bitfinex" class="status"></div>
+    </div>
+
+    <div id="kraken" class="exchange-container">
+        <div class="exchange-title">Kraken</div>
+        <div id="price-kraken" class="price">Connecting...</div>
+        <div id="status-kraken" class="status"></div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
