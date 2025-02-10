@@ -360,10 +360,26 @@ body {
 /* Popup specific adjustments */
 .popup-view #binance-prices {
     grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
 }
 
 .popup-view .crypto-card {
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    padding: 12px;
+}
+
+.popup-view #prices {
+    padding: 8px;
+}
+
+.popup-view .crypto-header {
+    margin-bottom: 4px;
+}
+
+.popup-view .crypto-price {
+    margin-top: 2px;
 }
 
 /* Sidebar specific adjustments */
