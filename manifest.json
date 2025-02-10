@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
-    "name": "Real-time Bitcoin Price",
-    "description": "Displays real-time Bitcoin prices from multiple exchanges.",
+    "name": "Binance Crypto Prices",
+    "description": "Real-time cryptocurrency prices from Binance",
     "version": "1.0",
     "action": {
         "default_popup": "index.html",
@@ -14,8 +14,11 @@
     "permissions": [
         "storage",
         "activeTab",
-        "scripting"
+        "sidePanel"
     ],
+    "side_panel": {
+        "default_path": "index.html?view=sidebar"
+    },
     "icons": {
         "16": "icons/icon-16.png",
         "48": "icons/icon-48.png",

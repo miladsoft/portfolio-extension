@@ -4,41 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Bitcoin Price from Multiple Exchanges</title>
+    <title>Binance Crypto Prices</title>
     <link rel="stylesheet" href="style.css">
-    <meta http-equiv="Content-Security-Policy"
-        content="script-src 'self' 'sha256-V35v+wTx3wnUibH1WWdbrxRwQirGsHsHt59T+D0zzxs=';">
-
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
 </head>
 
 <body>
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="prices">Prices</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </div>
 
-    <div id="binance" class="exchange-container">
-        <div class="exchange-title">Binance</div>
-        <div id="price-binance" class="price">Connecting...</div>
-        <div id="status-binance" class="status"></div>
+        <div id="prices" class="tab-content active">
+            <div id="binance-prices"></div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <div class="settings-container">
+                <div class="crypto-search">
+                    <input type="text" id="cryptoSearch" placeholder="Search cryptocurrency...">
+                </div>
+                <div class="crypto-list" id="cryptoList">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="mempool" class="exchange-container">
-        <div class="exchange-title">Mempool.space</div>
-        <div id="price-mempool" class="price">Loading...</div>
-        <div id="status-mempool" class="status">Fetching price...</div>
-    </div>
-
-    <div id="bitfinex" class="exchange-container">
-        <div class="exchange-title">Bitfinex</div>
-        <div id="price-bitfinex" class="price">Connecting...</div>
-        <div id="status-bitfinex" class="status"></div>
-    </div>
-
-    <div id="kraken" class="exchange-container">
-        <div class="exchange-title">Kraken</div>
-        <div id="price-kraken" class="price">Connecting...</div>
-        <div id="status-kraken" class="status"></div>
-    </div>
-
+    <script src="init.js"></script>
     <script src="script.js"></script>
-
 </body>
 
 </html>

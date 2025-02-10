@@ -1,94 +1,172 @@
-     const exchanges = {
-        binance: {
-            url: 'wss://stream.binance.com:9443/ws/btcusdt@trade',
-            priceElement: document.getElementById('price-binance'),
-            statusElement: document.getElementById('status-binance'),
-            parseData: (data) => parseFloat(data.p).toFixed(2)
-        },
-        bitfinex: {
-            url: 'wss://api-pub.bitfinex.com/ws/2',
-            priceElement: document.getElementById('price-bitfinex'),
-            statusElement: document.getElementById('status-bitfinex'),
-            subscribeMessage: JSON.stringify({
-                event: "subscribe",
-                channel: "ticker",
-                pair: "BTCUSD"
-            }),
-            parseData: (data) => Array.isArray(data) && data[1] && Array.isArray(data[1]) ? parseFloat(data[1][6]).toFixed(2) : null
-        },
-        kraken: {
-            url: 'wss://ws.kraken.com',
-            priceElement: document.getElementById('price-kraken'),
-            statusElement: document.getElementById('status-kraken'),
-            subscribeMessage: JSON.stringify({
-                event: "subscribe",
-                pair: ["XBT/USD"],
-                subscription: { name: "ticker" }
-            }),
-            parseData: (data) => data[1] && data[1].c ? parseFloat(data[1].c[0]).toFixed(2) : null
+// Initialize global variables first
+let selectedPairs = new Set(['btcusdt']); // Default selected pair
+let websocket = null;
+
+const top100Cryptos = [
+    'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'SOLUSDT', 'DOGEUSDT', 'DOTUSDT', 'MATICUSDT', 'SHIBUSDT',
+    'LTCUSDT', 'TRXUSDT', 'AVAXUSDT', 'UNIUSDT', 'LINKUSDT', 'XLMUSDT', 'ATOMUSDT', 'ALGOUSDT', 'VETUSDT', 'MANAUSDT',
+    'ICPUSDT', 'FILUSDT', 'SANDUSDT', 'THETAUSDT', 'AXSUSDT', 'FTMUSDT', 'HBARUSDT', 'EGLDUSDT', 'HNTUSDT', 'FTTUSDT',
+    'GRTUSDT', 'KSMUSDT', 'LUNAUSDT', 'NEARUSDT', 'CAKEUSDT', 'AAVEUSDT', 'RUNEUSDT', 'MKRUSDT', 'ZILUSDT', 'ENJUSDT',
+    'CHZUSDT', 'SNXUSDT', 'COMPUSDT', 'YFIUSDT', '1INCHUSDT', 'OMGUSDT', 'ZRXUSDT', 'BATUSDT', 'BNTUSDT', 'QTUMUSDT',
+    'IOSTUSDT', 'ONTUSDT', 'DGBUSDT', 'SCUSDT', 'ICXUSDT', 'STMXUSDT', 'ZENUSDT', 'ANKRUSDT', 'SRMUSDT', 'CRVUSDT',
+    'SUSHIUSDT', 'LRCUSDT', 'OCEANUSDT', 'RSRUSDT', 'KAVAUSDT', 'BALUSDT', 'BANDUSDT', 'CVCUSDT', 'CTSIUSDT', 'DENTUSDT',
+    'STORJUSDT', 'KNCUSDT', 'MTLUSDT', 'NKNUSDT', 'WRXUSDT', 'TWTUSDT', 'BTSUSDT', 'ARDRUSDT', 'LPTUSDT', 'COTIUSDT',
+    'MITHUSDT', 'MBLUSDT', 'DOCKUSDT', 'CTKUSDT', 'AKROUSDT', 'TROYUSDT', 'DIAUSDT', 'PONDUSDT', 'LINAUSDT', 'FETUSDT',
+    'PERLUSDT', 'RIFUSDT', 'STPTUSDT', 'MDTUSDT', 'AVAUSDT', 'XVSUSDT', 'ALPHAUSDT', 'UNFIUSDT', 'FLMUSDT', 'ORNUSDT',
+    'UTKUSDT', 'TRBUSDT', 'DODOUSDT', 'REEFUSDT', 'LITUSDT', 'SFPUSDT', 'DUSKUSDT', 'COVERUSDT', 'FORTHUSDT', 'RAMPUSDT'
+];
+
+// Local storage functions
+function saveSelectedPairs() {
+    localStorage.setItem('selectedPairs', JSON.stringify(Array.from(selectedPairs)));
+}
+
+function loadSelectedPairs() {
+    const storedPairs = localStorage.getItem('selectedPairs');
+    if (storedPairs) {
+        selectedPairs = new Set(JSON.parse(storedPairs));
+    }
+}
+
+// Initialize tabs
+function initializeTabs() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const targetId = tab.getAttribute('data-tab');
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+}
+
+function numberWithCommas(x) {
+    return parseFloat(x).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function createPriceCard(symbol, price, change24h) {
+    return `
+        <div class="crypto-card" data-symbol="${symbol}">
+            <div class="crypto-header">
+                <span class="crypto-name">${symbol.replace('USDT', '/USDT')}</span>
+                <span class="price-change ${change24h >= 0 ? 'positive' : 'negative'}">
+                    ${change24h >= 0 ? '↑' : '↓'} ${Math.abs(change24h).toFixed(2)}%
+                </span>
+            </div>
+            <div class="crypto-price">$${numberWithCommas(price)}</div>
+        </div>
+    `;
+}
+
+function connectWebSocket() {
+    if (websocket) {
+        websocket.close();
+    }
+
+    const pairs = Array.from(selectedPairs);
+    if (pairs.length === 0) return;
+
+    const streams = pairs.map(pair => `${pair}@ticker`).join('/');
+    websocket = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+
+    websocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.e === '24hrTicker') {
+            const price = parseFloat(data.c);
+            const change24h = parseFloat(data.P);
+            const symbol = data.s;
+            
+            const container = document.getElementById('binance-prices');
+            if (!container) return;
+
+            const existingCard = container.querySelector(`[data-symbol="${symbol}"]`);
+            const newCardHTML = createPriceCard(symbol, price, change24h);
+            
+            if (existingCard) {
+                existingCard.outerHTML = newCardHTML;
+            } else {
+                container.insertAdjacentHTML('beforeend', newCardHTML);
+            }
         }
     };
 
-    function connectToExchange(exchange) {
-        const ws = new WebSocket(exchange.url);
+    websocket.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+        setTimeout(connectWebSocket, 5000);
+    };
 
-        ws.onopen = () => {
-            exchange.statusElement.innerText = 'WebSocket connected';
-            if (exchange.subscribeMessage) {
-                ws.send(exchange.subscribeMessage);
+    websocket.onclose = () => {
+        console.log('WebSocket closed, reconnecting...');
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+function renderCryptoList(cryptos) {
+    const cryptoList = document.getElementById('cryptoList');
+    if (!cryptoList) return;
+
+    cryptoList.innerHTML = '';
+
+    cryptos.forEach(crypto => {
+        const cryptoItem = document.createElement('label');
+        cryptoItem.className = 'crypto-item';
+        
+        const isChecked = selectedPairs.has(crypto.toLowerCase());
+        
+        cryptoItem.innerHTML = `
+            <input type="checkbox" value="${crypto.toLowerCase()}" ${isChecked ? 'checked' : ''}>
+            ${crypto.replace('USDT', '/USDT')}
+        `;
+
+        const checkbox = cryptoItem.querySelector('input');
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                selectedPairs.add(checkbox.value);
+            } else {
+                selectedPairs.delete(checkbox.value);
             }
-        };
+            saveSelectedPairs();
+            connectWebSocket();
+        });
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const price = exchange.parseData(data);
-            if (price) {
-                exchange.priceElement.innerText = `$${price}`;
-            }
-        };
+        cryptoList.appendChild(cryptoItem);
+    });
+}
 
-        ws.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-            exchange.priceElement.innerText = 'Error fetching price.';
-            exchange.statusElement.innerText = 'WebSocket error occurred. Trying to reconnect...';
-            exchange.statusElement.classList.add('error');
-            attemptReconnect(exchange);
-        };
+function populateCryptoList() {
+    const searchInput = document.getElementById('cryptoSearch');
+    if (!searchInput) return;
 
-        ws.onclose = () => {
-            console.log('WebSocket connection closed');
-            exchange.statusElement.innerText = 'WebSocket connection closed. Reconnecting...';
-            exchange.priceElement.innerText = 'Connection closed.';
-            attemptReconnect(exchange);
-        };
-    }
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredCryptos = top100Cryptos.filter(crypto => 
+            crypto.toLowerCase().includes(searchTerm)
+        );
+        renderCryptoList(filteredCryptos);
+    });
 
-    function attemptReconnect(exchange) {
-        setTimeout(() => {
-            console.log('Reconnecting to WebSocket...');
-            exchange.statusElement.innerText = 'Reconnecting...';
-            connectToExchange(exchange);
-        }, 2000);
-    }
+    renderCryptoList(top100Cryptos);
+}
 
-    function fetchMempoolPrice() {
-        const mempoolPriceElement = document.getElementById('price-mempool');
-        const mempoolStatusElement = document.getElementById('status-mempool');
-
-        fetch('https://mempool.space/api/v1/prices')
-            .then(response => response.json())
-            .then(data => {
-                mempoolPriceElement.innerText = `$${data.USD}`;
-                mempoolStatusElement.innerText = 'Updated just now';
-            })
-            .catch(error => {
-                console.error('Error fetching Mempool.space price:', error);
-                mempoolPriceElement.innerText = 'Error fetching price.';
-                mempoolStatusElement.innerText = 'Retrying...';
-            });
-    }
-
-    Object.values(exchanges).forEach(connectToExchange);
-    fetchMempoolPrice(); 
-    setInterval(fetchMempoolPrice, 5000);
- 
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    loadSelectedPairs();
+    initializeTabs();
+    populateCryptoList();
+    connectWebSocket();
+});
