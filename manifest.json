@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Binance Crypto Prices",
+    "name": "Crypto Prices",
     "description": "Real-time cryptocurrency prices from Binance",
     "version": "1.0",
     "action": {

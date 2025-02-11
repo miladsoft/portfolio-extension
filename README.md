@@ -1,4 +1,4 @@
-# 🚀 Real-time Bitcoin Price Extension
+# 🚀 Real-time Crypto Price Extension
 
 This browser extension displays real-time Bitcoin prices from multiple exchanges, including Binance, Mempool.space, Bitfinex, and Kraken. You can easily track the latest Bitcoin prices directly from your browser!
 
